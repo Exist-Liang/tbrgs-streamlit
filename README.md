@@ -15,7 +15,7 @@ It combines:
 
 
 **Live demo:**  
-[`https://YOUR-STREAMLIT-APP-URL`](https://tbrgs-app-us8rbxvwr8wqvnnzzinbcz.streamlit.app/)
+[https://tbrgs-app-us8rbxvwr8wqvnnzzinbcz.streamlit.app/]
 
 The demo allows you to:
 
