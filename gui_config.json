@@ -1,0 +1,9 @@
+{
+  "model": "LSTM",
+  "algorithm": "astar",
+  "origin": 3180,
+  "destination": 3120,
+  "hour": "09",
+  "minute": "15",
+  "weekday": 6
+}

@@ -84,7 +84,7 @@ st.markdown(
 Interactive demo for your traffic-based route guidance system.
 
 - **Model**: LSTM / GRU / CNN traffic flow predictor  
-- **Routing algorithms**: GBFS, DFS, UCS, A*  
+- **Routing algorithms**: GBFS, UCS, A*  
 - **Data**: SCATS detectors mapped to road network nodes
 """
 )
@@ -109,12 +109,14 @@ if "minute" not in st.session_state:
     st.session_state.minute = "30"
 if "weekday" not in st.session_state:
     st.session_state.weekday = 4  # Friday
+
 if "model" not in st.session_state:
     st.session_state.model = "LSTM"
 if "algorithm" not in st.session_state:
     st.session_state.algorithm = "astar"
 
-# ------------- NEW: randomize callback -------------
+
+# ------------- randomize callback -------------
 
 def randomize_inputs():
     """Callback for the Randomize button – allowed to modify session_state."""
@@ -126,11 +128,10 @@ def randomize_inputs():
     st.session_state.hour = random.randint(0, 23)
     st.session_state.minute = random.choice(["00", "15", "30", "45"])
     st.session_state.weekday = random.randint(0, 6)
-    # 可选：强制刷新一次
-    # st.experimental_rerun()
+
 
 # -----------------------------
-# Layout: controls (left) & map (right)
+# Layout: left = inputs, right = map
 # -----------------------------
 
 left_col, right_col = st.columns([3, 7])
@@ -144,9 +145,11 @@ with left_col:
         key="model",
     )
 
+    # ✅ 只保留性能可接受的算法
+    alg_options = ["gbfs", "ucs", "astar"]
     algorithm = st.selectbox(
         "Search Algorithm",
-        ["gbfs", "ucs", "astar"],
+        alg_options,
         key="algorithm",
     )
 
@@ -167,20 +170,17 @@ with left_col:
         key="dest_id",
     )
 
-    st.markdown("**Time (HH:MM)**")
-    hour = st.number_input(
-        "Hour",
-        min_value=0,
-        max_value=23,
-        step=1,
-        key="hour",
-    )
-    minute = st.radio(
-        "Minute",
-        options=["00", "15", "30", "45"],
-        key="minute",
-        horizontal=True,
-    )
+    st.markdown("### Time & Weekday")
+
+    col_time1, col_time2 = st.columns(2)
+    with col_time1:
+        hour = st.slider("Hour", 0, 23, key="hour")  
+    with col_time2:
+        minute = st.selectbox(
+            "Minute",
+            ["00", "15", "30", "45"],
+         key="minute",        
+        )
 
     weekday_idx = st.radio(
         "Weekday",
@@ -191,7 +191,6 @@ with left_col:
     )
 
     st.markdown("---")
-    # 关键改动：用 on_click 调用 randomize_inputs，而不是 if randomize: 再赋值
     st.button("🎲 Randomize Inputs", on_click=randomize_inputs)
     run_clicked = st.button("🚀 Run Prediction")
 
@@ -218,21 +217,19 @@ with left_col:
                 if not results:
                     st.warning("❌ No path found for the given parameters.")
                 else:
-                    st.subheader("Route Results")
-                    for i, route in enumerate(results, start=1):
-                        st.write(
-                            f"**Route {i}**: "
-                            f"{' → '.join(map(str, route['path']))} "
-                            f" | Cost: `{route['cost']}` min"
-                        )
+                    st.markdown("### Top Routes")
+                    for idx, item in enumerate(results, start=1):
+                        st.write(f"**Route {idx}:** {' → '.join(map(str, item['path']))}")
+                        st.write(f"Estimated time: **{item['cost']:.2f} min**")
 
-                    all_paths = [r["path"] for r in results]
-                    all_costs = [r["cost"] for r in results]
+                    # 为地图绘制准备节点列表和 cost 列表
+                    path_nodes_list = [r["path"] for r in results]
+                    path_cost_list = [r["cost"] for r in results]
 
                     map_path = "data/output_map.html"
                     generate_map(
-                        path_nodes_list=all_paths,
-                        path_cost_list=all_costs,
+                        path_nodes_list=path_nodes_list,
+                        path_cost_list=path_cost_list,
                         pbf_file="data/B.osm.pbf",
                         path_file="data/Paths&Node_mapped.csv",
                         node_file="data/mapped_scats_nodes.csv",
